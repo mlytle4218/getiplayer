@@ -39,6 +39,11 @@ class Search_Episode:
         self.id = id
 
 
+def log(input):
+    with open('log.txt', 'a') as f:
+        f.write( str( input ) )
+
+
 
 def print_out_menu_options(options, multi_choice=False, func=None):
     choices = []
@@ -355,6 +360,24 @@ def list_episodes(obj):
     episode_url = base + obj.href.replace('featured','a-z')
     script = get_script(episode_url)
     episodes = get_search_episodes_from_json(script)
+
+
+
+    page = 0
+    totalPages = 0
+    if 'pagination' in script:
+        if 'totalPages' in script['pagination']:
+            totalPages = int( script['pagination']['totalPages'] )
+            if totalPages > 1:
+                page = 2
+
+    while page < totalPages:
+        script = get_script(episode_url + "?page={}".format(page))
+        episodes.extend( get_search_episodes_from_json( script ) )
+        page +=1
+        
+
+
     print_out_menu_options(episodes, True, list_available_episodes)
     # episodes = sql.get_episodes_with_downloads_available(podcast)
     # print_out_menu_options(episodes, 'title', True, add_to_download_queue, False)
