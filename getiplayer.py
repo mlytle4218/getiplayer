@@ -449,16 +449,17 @@ def main():
             elif result == 3:
                 print_out_menu_options( channels, False, list_episodes)
             elif result == 4:
-                output_path = os.getcwd() + ':/save-here'
-                command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
-                for each in download_queue:
-                    command += each.id + " "
-                command += "'"
-                subprocess.run(command, shell=True)
-                download_queue.clear()
-                # for each in download_queue:
-                #     print(each.id)
-                # time.sleep(5)
+                if len( download_queue ) > 0: 
+                    output_path = os.getcwd() + ':/save-here'
+                    command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
+                    for each in download_queue:
+                        command += each.id + " "
+                    command += "'"
+                    subprocess.run(command, shell=True)
+                    download_queue.clear()
+                    # for each in download_queue:
+                    #     print(each.id)
+                    # time.sleep(5)
 
         except ValueError:
             if result == 'q':
