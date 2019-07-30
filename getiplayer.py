@@ -357,26 +357,31 @@ def parse_p(url):
 
 
 def list_episodes(obj):
-    episode_url = base + obj.href.replace('featured','a-z')
+    episode_url = base + obj.href.replace('/featured','')
+    episode_url += '/a-z'
+    log( episode_url )
     script = get_script(episode_url)
     episodes = get_search_episodes_from_json(script)
+    for each in episodes:
+        log(each.title)
 
 
 
-    page = 0
+    page = 1
     totalPages = 0
+    checking = "checking {} of {} pages" 
     if 'pagination' in script:
         if 'totalPages' in script['pagination']:
             totalPages = int( script['pagination']['totalPages'] )
             if totalPages > 1:
+                print(checking.format(page, totalPages))
                 page = 2
 
     while page < totalPages:
+        print(checking.format(page, totalPages))
         script = get_script(episode_url + "?page={}".format(page))
         episodes.extend( get_search_episodes_from_json( script ) )
         page +=1
-        
-
 
     print_out_menu_options(episodes, True, list_available_episodes)
     # episodes = sql.get_episodes_with_downloads_available(podcast)
