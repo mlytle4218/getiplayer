@@ -15,9 +15,6 @@ class Channel:
         self.title = title
         self.href = href
         self.liveHref = liveHref
-    
-    def __str__(self):
-        return self.title
 
 
 class Category:
@@ -25,17 +22,11 @@ class Category:
         self.title = title
         self.href = href
 
-    def __str__(self):
-        return self.title
-
 class Show:
     def __init__(self,title, id, synopsis):
         self.title = title
         self.id = id
         self.synopsis = synopsis
-    
-    def __str__(self):
-        return self.title
 
 class Search_Episode:
     def __init__(self,durationSubLabel, href, subtitle, synopsis, title, episode_type, id):
@@ -47,12 +38,12 @@ class Search_Episode:
         self.episode_type = episode_type
         self.id = id
 
-    def __str__(self):
-        return self.title + " - " +self.subtitle
 
 def log(input):
     with open('log.txt', 'a') as f:
         f.write( str( input ) )
+
+
 
 def print_out_menu_options(options, multi_choice=False, func=None):
     choices = []
@@ -81,8 +72,7 @@ def print_out_menu_options(options, multi_choice=False, func=None):
     while True:
         os.system('clear')
         for each in display_control[page_itr]:
-            # print( 'number {} {}'.format(each+1, options[each].title) )
-            print( 'number {} {}'.format(each+1, options[each]) )
+            print( 'number {} {}'.format(each+1, options[each].title) )
 
         result = input('choice ')
         if result == 'n':
@@ -113,6 +103,44 @@ def print_out_menu_options(options, multi_choice=False, func=None):
 def add_to_download_queue(episode):
     download_queue.append(episode)
 
+def search_by_keyword():
+    os.system('clear')
+    result = input('enter keywords separated by space ')
+    result = result.replace(' ', '+')
+    url = 'https://www.bbc.co.uk/iplayer/search?q=' + result
+    return parse_page(url, True)
+
+
+def get_channels():
+    url = 'https://www.bbc.co.uk/iplayer'
+    result = requests.get(url)
+    soup = BeautifulSoup(result.content, 'html.parser')
+    channels = []
+    ul_scrollable_nav = soup.find('div', class_='channels-sub-nav').find_all('li')
+    for each in ul_scrollable_nav:
+        it = each.find('a', class_='channels-nav__item')
+        if it != None:
+            link = 'https://www.bbc.co.uk' + it['href']
+            channel = Channel(it.text.lower(),link.replace('featured','a-z'))
+            channels.append(channel)
+    return channels
+
+
+
+def get_categories():
+    url = 'https://www.bbc.co.uk/iplayer'
+    result = requests.get(url)
+    soup = BeautifulSoup(result.content, 'html.parser')
+    categories = []
+    ul_scrollable_nav = soup.find('div', class_='categories-sub-nav').find_all('li')
+    for each in ul_scrollable_nav:
+        it = each.find('a', class_='categories-sub-nav__item')
+        if it != None:
+            link = 'https://www.bbc.co.uk' + it['href']
+            category = Category(it.text.lower(), link.replace('featured','a-z'))
+            categories.append(category)
+    return categories
+
 def get_items(soup):
     results = []
     items = soup.find_all('div', class_='content-item')
@@ -122,12 +150,15 @@ def get_items(soup):
         content = content_item_link['aria-label'].split('Description: ')
         link = 'https://www.bbc.co.uk' + content_item_link['href']
         show = Show(content[0], link.replace('featured', 'a-z'))
-        log(show)
         multiple = each.find('a', class_='lnk')
         if multiple != None:
             show.multiple_episodes = True
+            # show.href = multiple['href']
         results.append(show)
     return results
+
+
+
 
 def parse_page(url,search=False):
     page = requests.get(url)
@@ -145,6 +176,8 @@ def parse_page(url,search=False):
     else:
         list_of_pages.append(2)
 
+    # iplayer website uses a ? before page when the user is using the search function
+    # and a & when the user is looking through the channel or category lists
     page_token = ''
     if search:
         page_token = '&'
@@ -173,15 +206,22 @@ def search_by_keyword2(search_term=None):
     url = 'https://www.bbc.co.uk/iplayer/search?q=' + urllib.parse.quote( result )
     return parse_search(url)
 
+
 def parse_search(url):
     return_results = []
     python_obj = get_script(url)
+    # pp.pprint(python_obj)
+    # while True:
+    #     try:
+    #         pass
+    #     except KeyboardInterrupt:
+    #         break
+
     currentPage =  int( python_obj['pagination']['currentPage'] )
     totalPages = int( python_obj['pagination']['totalPages'] )
     print('checking {} of {} pages'.format(currentPage, totalPages))
+
     search_episodes = get_search_episodes_from_json(python_obj)
-
-
     return_results.extend(search_episodes)
     while currentPage < totalPages:
         currentPage += 1
@@ -193,49 +233,21 @@ def parse_search(url):
         return_results.extend( temp )
         print('checking {} of {} pages'.format(currentPage, totalPages))
         time.sleep(t1*2)
+
+
+
+    # for e in return_results:
+    #     print(e.__dict__)
+    # print('hi')
+    # while True:
+    #     try:
+    #         pass
+    #     except KeyboardInterrupt:
+    #         break
+
     return return_results
 
 def get_search_episodes_from_json(python_obj):
-    log('*****************************************\n')
-    results = []
-    if 'entities' in python_obj:
-        entities = python_obj['entities']
-        for entity in entities:
-            if 'meta' in entity and 'secondaryHref' in entity['meta']:
-                temp_url = base + entity['meta']['secondaryHref']
-                temp_result = parse_search(temp_url)
-                for each in temp_result:
-                    results.append(each)
-            else:
-                if 'durationSubLabel' not in entity['props']:
-                    entity['props']['durationSubLabel'] = None
-                if 'synopsis' not in entity['props']:
-                    entity['props']['synopsis'] = None
-                if 'subtitle' not in entity['props']:
-                    entity['props']['subtitle'] = None
-                if 'type'  not in entity['props']:
-                    entity['props']['type'] = None
-                if 'meta' in entity and 'id' not in entity['meta']:
-                    entity['meta']['id'] = None
-                else:
-                    entity['meta'] = {}
-                    entity['meta']['id'] = None
-                search_episode = Search_Episode(
-                    entity['props']['durationSubLabel'],
-                    entity['props']['href'],
-                    entity['props']['subtitle'],
-                    entity['props']['synopsis'],
-                    entity['props']['title'],
-                    entity['props']['type'],
-                    entity['meta']['id'])
-                if 'meta' in entity and 'programmeId' in entity['meta']:
-                    search_episode.id = entity['meta']['programmeId']
-                results.append(search_episode)
-    else:
-        return None
-    return results
-
-def get_search_episodes_from_json_old(python_obj):
     results = []
     if 'entities' in python_obj:
         entities = python_obj['entities']
@@ -283,7 +295,9 @@ def get_search_episodes_from_json_old(python_obj):
                         entity['props']['type'],
                         entity['meta']['id'])
                     results.append(search_episode)
+
     return results
+
 
 def get_script(url):
     page = requests.get( url )
@@ -295,7 +309,52 @@ def get_script(url):
             res2 = each.text.replace('window.__IPLAYER_REDUX_STATE__ = ','')
             res2 = res2.replace(';','')
 
+    # pp.pprint(res2)
+    # time.sleep(5)
+
     return json.loads(res2)
+
+
+
+
+def parse_p(url):
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    number = soup.find_all('script')
+    res2 = ''
+    for each in number:
+        if 'window.__IPLAYER_REDUX_STATE__ = ' in each.text:
+            res2 = each.text.replace('window.__IPLAYER_REDUX_STATE__ = ','')
+            res2 = res2.replace(';','')
+
+    python_obj = json.loads(res2)
+
+    currentPage =  int( python_obj['pagination']['currentPage'] )
+    pageUrl = python_obj['pagination']['pageUrl'].replace('%s', '')
+    totalPages = int( python_obj['pagination']['totalPages'] )
+    while currentPage < totalPages:
+        currentPage += 1
+        print(pageUrl + str( currentPage ) )
+        # t0 = time.time()
+        # page = requests.get(url + pageUrl + str( currentPage ) )
+        # t_wait = t0-  time.time()
+        # soup = BeautifulSoup(page.content, 'html.parser')
+        # number = soup.find_all('script')
+        # res2 = ''
+        # for each in number:
+        #     if 'window.__IPLAYER_REDUX_STATE__ = ' in each.text:
+        #         res2 = each.text.replace('window.__IPLAYER_REDUX_STATE__ = ','')
+
+        # python_obj = json.loads(res2.replace(';',''))
+
+
+
+    # print(currentPage)
+    # print(pageUrl)
+    # print(totalPages)
+    return python_obj
+
+
 
 def list_episodes(obj):
     episode_url = base + obj.href.replace('/featured','')
@@ -325,8 +384,11 @@ def list_episodes(obj):
         page +=1
 
     print_out_menu_options(episodes, True, list_available_episodes)
+    # episodes = sql.get_episodes_with_downloads_available(podcast)
+    # print_out_menu_options(episodes, 'title', True, add_to_download_queue, False)
 
 def list_available_episodes(obj):
+    # print(base + obj.href)
     script = get_script(base + obj.href)['relatedEpisodes']
     if int( script['count'] ) > 0:
         shows = []
@@ -338,10 +400,26 @@ def list_available_episodes(obj):
     else:
         print('no episodes found')
         time.sleep(3)
+    # pp.pprint(script['relatedEpisodes'])
+    # time.sleep(10)
 
 def main():
     print('retrieving data')
     python_obj = get_script(base + "/iplayer")
+#     page = requests.get('https://www.bbc.co.uk/iplayer/categories/arts/a-z')
+    # page = requests.get('https://www.bbc.co.uk/iplayer')
+    # soup = BeautifulSoup(page.content, 'html.parser')
+    # number = soup.find_all('script')
+    # res2 = ''
+    # for each in number:
+    #     if 'window.__IPLAYER_REDUX_STATE__ = ' in each.text:
+    #         res2 = each.text.replace('window.__IPLAYER_REDUX_STATE__ = ','')
+
+    # python_obj = json.loads(res2.replace(';',''))
+    # # python_obj = parse_p('https://www.bbc.co.uk/iplayer')
+    # arts = 'https://www.bbc.co.uk/iplayer/categories/arts/a-z'
+    # aToZ = 'https://www.bbc.co.uk/iplayer/a-z/'
+    # python_obj = parse_p(aToZ +"a")
     
     channels = []
     categories = []
@@ -375,15 +453,101 @@ def main():
                     output_path = os.getcwd() + ':/save-here'
                     command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
                     for each in download_queue:
-                        log(type(each))
                         command += each.id + " "
                     command += "'"
-                    # subprocess.run(command, shell=True)
+                    subprocess.run(command, shell=True)
                     download_queue.clear()
+                    # for each in download_queue:
+                    #     print(each.id)
+                    # time.sleep(5)
 
         except ValueError:
             if result == 'q':
                 break
+
+    # python_obj = search_by_keyword2('tony beer')
+    # for each in python_obj:
+    #     pp.pprint(each.title)
+    # pp.pprint(python_obj)
+
+    # for each in channels:
+    #     print(each.title)blue
+
+
+    # text_file = open("Output2.json", "w")
+    # text_file.write(res2 )
+    # text_file.close()
+    # currentPage = 1
+    # totalPages = int( python_obj['pagination']['totalPages'] )
+
+    # pp.pprint(python_obj)
+
+    # while currentPage < totalPages:
+    #     currentPage += 1
+    #     print(currentPage)
+
+
+
+    # while True:
+    #     os.system('clear')
+    #     print('number 1 search by category ')
+    #     print('number 2 search by channel ')
+    #     result = input('choice ')
+    #     try:
+    #         result = int( result )
+    #         if result == 1:
+    #             categories = get_categories()
+    #             choice = print_out_menu_options(categories)
+    #             res = parse_page(choice.href)
+    #             res2 = print_out_menu_options(res, True)
+    #             for each in res2:
+    #                 print(each.title)
+    #             try:
+    #                 while True:
+    #                     pass
+    #             except KeyboardInterrupt:
+    #                 pass
+    #         elif result == 2:
+    #             channels = get_channels()
+    #             choice = print_out_menu_options(channels)
+    #             res = parse_page(choice.href)
+    #             res2 = print_out_menu_options(res, True)
+    #             for each in res2:
+    #                 print(each.title)
+    #             try:
+    #                 while True:
+    #                     pass
+    #             except KeyboardInterrupt:
+    #                 pass
+
+    #     except ValueError:
+    #         if result == 'q':
+    #             break
+
+
+    # category_menu()
+    # category = 'news'
+    # url = "https://www.bbc.co.uk/iplayer/categories/{}/a-z".format(category)
+    # results = parse_page(url)
+    # for each in results:
+    #     print(each.title)
+    #     print(each.href)
+    #     print(each.multiple_episodes)
+    #     print()
+    # page = requests.get(url)
+    # soup = BeautifulSoup(page.content, 'html.parser')
+
+    # divs = soup.find_all('div', class_='content-item')
+
+
+    # for each in divs:
+    #     title2 = each.find('div',class_='content-item__title').text
+    #     print(title2)
+    #     link = each.find('a', class_='lnk')
+    #     if link != None:
+    #         print(link['href'])
+    #     else:
+    #         print('single shot')
 
 
 if __name__ == "__main__":
