@@ -201,6 +201,8 @@ def get_search_episodes_from_json(python_obj):
     if 'entities' in python_obj:
         entities = python_obj['entities']
         for entity in entities:
+            # log(entity)
+            # log('\n')
             if 'meta' in entity and 'secondaryHref' in entity['meta']:
                 temp_url = base + entity['meta']['secondaryHref']
                 temp_result = parse_search(temp_url)
@@ -230,6 +232,8 @@ def get_search_episodes_from_json(python_obj):
                     entity['meta']['id'])
                 if 'meta' in entity and 'programmeId' in entity['meta']:
                     search_episode.id = entity['meta']['programmeId']
+                if 'id'  in entity:
+                    search_episode.id = entity['id']
                 results.append(search_episode)
     else:
         return None
@@ -259,6 +263,7 @@ def get_search_episodes_from_json_old(python_obj):
                     entity['meta']['id'])
                 if 'programmeId' in entity['meta']:
                     search_episode.id = entity['meta']['programmeId']
+                log(search_episode)
                 results.append(search_episode)
     elif 'groups' in python_obj:
         groups = python_obj['groups']
@@ -375,11 +380,14 @@ def main():
                     output_path = os.getcwd() + ':/save-here'
                     command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
                     for each in download_queue:
-                        log(type(each))
+                        log((each.id))
                         command += each.id + " "
                     command += "'"
-                    # subprocess.run(command, shell=True)
+                    subprocess.run(command, shell=True)
                     download_queue.clear()
+            elif result == 99:
+                for d in download_queue:
+                    log((d.id))
 
         except ValueError:
             if result == 'q':
