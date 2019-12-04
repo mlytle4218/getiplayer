@@ -9,6 +9,7 @@ import pprint as pp
 import time
 import sys
 import urllib.parse
+import re
 
 class Channel:
     def __init__(self, title, href, liveHref):
@@ -93,8 +94,20 @@ def print_out_menu_options(options, multi_choice=False, func=None):
                 page_itr -=1
         elif result =='q':
             return choices
-        else: 
+        else:
+            dashed_option_choices = re.findall(r'[0-9]{1,2}\ ?\-\ ?[0-9]{1,2}', result)
+            result = re.sub(r'[0-9]{1,2}\ ?\-\ ?[0-9]{1,2}', '', result)
             result_list = result.split(' ')
+            result_list = list(filter(None, result_list))
+
+            for choice in dashed_option_choices:
+                choice_list = choice.split('-')
+                try:
+                    for i in range(int(choice_list[0]), int(choice_list[1])+1):
+                        result_list.append(i)
+                except ValueError:
+                    pass
+
             for item in result_list:
                 try:
                     item = int(item)
@@ -122,7 +135,7 @@ def get_items(soup):
         content = content_item_link['aria-label'].split('Description: ')
         link = 'https://www.bbc.co.uk' + content_item_link['href']
         show = Show(content[0], link.replace('featured', 'a-z'))
-        log(show)
+        # log(show)
         multiple = each.find('a', class_='lnk')
         if multiple != None:
             show.multiple_episodes = True
@@ -196,13 +209,11 @@ def parse_search(url):
     return return_results
 
 def get_search_episodes_from_json(python_obj):
-    log('*****************************************\n')
+    # log('*****************************************\n')
     results = []
     if 'entities' in python_obj:
         entities = python_obj['entities']
         for entity in entities:
-            # log(entity)
-            # log('\n')
             if 'meta' in entity and 'secondaryHref' in entity['meta']:
                 temp_url = base + entity['meta']['secondaryHref']
                 temp_result = parse_search(temp_url)
@@ -263,7 +274,6 @@ def get_search_episodes_from_json_old(python_obj):
                     entity['meta']['id'])
                 if 'programmeId' in entity['meta']:
                     search_episode.id = entity['meta']['programmeId']
-                log(search_episode)
                 results.append(search_episode)
     elif 'groups' in python_obj:
         groups = python_obj['groups']
@@ -305,11 +315,10 @@ def get_script(url):
 def list_episodes(obj):
     episode_url = base + obj.href.replace('/featured','')
     episode_url += '/a-z'
-    log( episode_url )
     script = get_script(episode_url)
     episodes = get_search_episodes_from_json(script)
-    for each in episodes:
-        log(each.title)
+    # for each in episodes:
+    #     log(each.title)
 
 
 
@@ -380,7 +389,6 @@ def main():
                     output_path = os.getcwd() + ':/save-here'
                     command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
                     for each in download_queue:
-                        log((each.id))
                         command += each.id + " "
                     command += "'"
                     subprocess.run(command, shell=True)
@@ -388,6 +396,7 @@ def main():
             elif result == 99:
                 for d in download_queue:
                     log((d.id))
+                    log('\n')
 
         except ValueError:
             if result == 'q':
