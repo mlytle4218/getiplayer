@@ -126,7 +126,7 @@ def main():
                         command += each.id + " "
                     command += "'"
                     log(command)
-                    # subprocess.run(command, shell=True)
+                    subprocess.run(command, shell=True)
                     # pids = []
                     # for each in download_queue:
                     #     pids.append(each.id.strip())
