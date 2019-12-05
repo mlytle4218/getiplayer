@@ -15,7 +15,7 @@ class Search_Episode:
         return self.title + " - " + self.subtitle
 
 def execute_search(search_term):
-    command = ['get-iplayer','--field=name,episode', search_term]
+    command = ['get_iplayer','--field=name,episode', search_term]
     results = []
     process = subprocess.check_output(command, stdin=None, stderr=None, shell=False, universal_newlines=False)
     for line in process.split(b'\n'):
