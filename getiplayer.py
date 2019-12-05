@@ -4,6 +4,7 @@ import sys
 import re
 import math
 import os 
+import config
 
 class Search_Episode:
     def __init__(self, title, subtitle, id):
@@ -28,7 +29,7 @@ def execute_search(search_term):
     return results
 
 def log(input):
-    with open('log.txt', 'a') as f:
+    with open(config.LOG_LOCATION, 'a') as f:
         f.write( str( input ) )
 
 def print_out_menu_options(options, multi_choice=False, func=None):
