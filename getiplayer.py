@@ -5,6 +5,8 @@ import re
 import math
 import os 
 import config
+import time
+
 
 class Search_Episode:
     def __init__(self, title, subtitle, id):
@@ -15,24 +17,32 @@ class Search_Episode:
     def __str__(self):
         return self.title + " - " + self.subtitle
 
-def execute_search(search_term):
-    command = ['get_iplayer','--field=name,episode', search_term]
+def execute_search(command):
     results = []
-    process = subprocess.check_output(command, stdin=None, stderr=None, shell=False, universal_newlines=False)
+    process = subprocess.check_output(command, stdin=None, stderr=None, shell=True, universal_newlines=False)
+
     for line in process.split(b'\n'):
-        if re.match(r'^[0-9]{4}:', line.decode('ASCII')):
-            line = line.decode('ASCII').replace('\t',' ').split(',')
-            line[0] = re.sub(r'[0-9]{4}: ', '', line[0])
-            se = Search_Episode(line[0], line[1], line[2])
-            results.append(se)
+        try:
+            if re.match(r'^[0-9]{4}:', line.decode('ASCII')):
+                line = line.decode('ASCII').replace('\t',' ').split(',')
+                line[0] = re.sub(r'[0-9]{4}: ', '', line[0])
+                se = Search_Episode(line[0], line[1], line[2])
+                results.append(se)
+        except Exception as e:
+            log(e)
 
     return results
 
 def log(input):
     with open(config.LOG_LOCATION, 'a') as f:
         f.write( str( input ) )
+        f.write('\n')
 
 def print_out_menu_options(options, multi_choice=False, func=None):
+    if len(options) == 0:
+        print('No results found')
+        time.sleep(2)
+        return None
     choices = []
     full = int( math.floor(len(options) / height ) )
     remainder = len(options) - (full * height)
@@ -100,9 +110,36 @@ def print_out_menu_options(options, multi_choice=False, func=None):
                     pass
 
 def search_by_keyword():
-    os.system('clear')
-    result = input('enter keywords separated by space ')
-    return print_out_menu_options( execute_search(result), True, add_to_download_queue )
+    try:
+        os.system('clear')
+        result = input('enter keywords: ')
+        command = "get_iplayer --field=name,episode {}".format(result)
+        return print_out_menu_options( execute_search(command), True, add_to_download_queue )
+    except KeyboardInterrupt:
+        return None
+
+def list_channels():
+    try:
+        list_of_channels =["BBC One","BBC Two","BBC Three","BBC Four","BBC Radio 1","CBBC","CBeebies","BBC Scotland","BBC News","BBC Parliament","BBC Alba","S4C"]
+        while True:
+            os.system('clear')
+            for itx,channel in enumerate(list_of_channels):
+                print("{}. {}".format(itx+1,channel))
+            result = input('choose channel: ')
+            if result == 'q':
+                break
+            try:
+                result = int(result)
+                if (result - 1) <= len(list_of_channels):
+                    command = "get_iplayer --channel='{}' '.*'".format(list_of_channels[result-1])
+                    return print_out_menu_options( execute_search(command), True, add_to_download_queue )
+            except ValueError:
+                log('valueError')
+    except KeyboardInterrupt:
+        return None
+
+
+    
 
 def add_to_download_queue(episode):
     download_queue.append(episode)
@@ -112,13 +149,19 @@ def main():
     while True:
         os.system('clear')
         print('number 1 search by keywords')
-        print('number 2 begin downloads')
-        result = input('choice ')
+        print('number 2 results by channel')
+        print('number 3 begin downloads')
+        try:
+            result = input('choice ')
+        except KeyboardInterrupt:
+            break
         try:
             result = int( result )
             if result == 1:
                 search_by_keyword()
             elif result == 2:
+                list_channels()
+            elif result == 3:
                 if len( download_queue ) > 0:
                     output_path = os.getcwd() + ':/save-here'
                     command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
@@ -134,6 +177,8 @@ def main():
                     # log(command)
                     # subprocess.run(command, shell=True)
                     download_queue.clear()
+            elif result == 99:
+                log(len(download_queue))
 
         except ValueError:
             if result == 'q':
