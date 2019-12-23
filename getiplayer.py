@@ -187,7 +187,12 @@ def main():
 
 
 if __name__ == "__main__":
-    width = int( subprocess.check_output(['tput','cols']) )
-    height = int( subprocess.check_output(['tput','lines']) ) -1
-    download_queue = []
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == '--help' or sys.argv[1] == '-h':
+        print('Usage: bbc')
+        print('Usage: Script to inteact with get_iplayer script')
+        print("Usage: Allows user to interact and search BBC's iplayer for shows to download. It gets the PID of each episdoe and passes that as arguments to a docker container that uses a VPN to the UK to get around the geo-fencing.")
+    else:
+        width = int( subprocess.check_output(['tput','cols']) )
+        height = int( subprocess.check_output(['tput','lines']) ) -1
+        download_queue = []
+        main()
