@@ -119,6 +119,38 @@ def search_by_keyword():
     except KeyboardInterrupt:
         return None
 
+def search_radio_by_channel():
+    try:
+        list_of_channels = [
+            "BBC Asian Network",
+            "BBC Radio 1$",
+            "BBC Radio 1Xtra",
+            "BBC Radio 2",
+            "BBC Radio 3",
+            "BBC Radio 4$",
+            "BBC Radio 4 Extra",
+            "BBC Radio 5 live sports extra",
+            "BBC Radio 5 live",
+            "BBC Radio 6 Music",
+            "BBC World Service",
+            ]
+        while True:
+            os.system('clear')
+            for itx,channel in enumerate(list_of_channels):
+                print("{}. {}".format(itx+1,channel))
+            result = input('choose channel: ')
+            if result == 'q':
+                break
+            try:
+                result = int(result)
+                if (result - 1) <= len(list_of_channels):
+                    command = "get_iplayer --type=radio --channel='{}' '.*'".format(list_of_channels[result-1])
+                    return print_out_menu_options( execute_search(command), True, add_to_download_queue )
+            except ValueError:
+                log('valueError')
+        
+    except KeyboardInterrupt:
+        return None
 
 def search_radio():
     try:
@@ -167,10 +199,11 @@ def main():
     os.system('clear')
     while True:
         os.system('clear')
-        print('number 1 search by keywords')
-        print('number 2 results by channel')
-        print('number 3 search radio only')
-        print('number 4 begin downloads')
+        print('number 1 search video by keywords')
+        print('number 2 search video by channel')
+        print('number 3 search radio by keywords')
+        print('number 4 search radio by channel')
+        print('number 5 begin downloads')
         try:
             result = input('choice ')
         except KeyboardInterrupt:
@@ -184,6 +217,8 @@ def main():
             elif result == 3:
                 search_radio()
             elif result == 4:
+                search_radio_by_channel()
+            elif result == 5:
                 if len( download_queue ) > 0:
                     output_path = os.getcwd() + ':/save-here'
                     command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
