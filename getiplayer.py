@@ -23,9 +23,9 @@ def execute_search(command):
 
     for line in process.split(b'\n'):
         try:
-            if re.match(r'^[0-9]{4}:', line.decode('ASCII')):
+            if re.match(r'^[0-9]{4,5}:', line.decode('ASCII')):
                 line = line.decode('ASCII').replace('\t',' ').split(',')
-                line[0] = re.sub(r'[0-9]{4}: ', '', line[0])
+                line[0] = re.sub(r'[0-9]{4,5}: ', '', line[0])
                 se = Search_Episode(line[0], line[1], line[2])
                 results.append(se)
         except Exception as e:
@@ -118,6 +118,21 @@ def search_by_keyword():
     except KeyboardInterrupt:
         return None
 
+
+def search_radio():
+    try:
+        os.system('clear')
+        result = input('enter keywords: ')
+        command = None
+        if result == '':
+            command = """get_iplayer --type=radio '.*' """
+            return print_out_menu_options( execute_search(command), True, add_to_download_queue)
+        else:
+            command = """get_iplayer --type=radio --field=name,episode {}""".format(result)
+            return print_out_menu_options( execute_search(command), True, add_to_download_queue)
+    except KeyboardInterrupt:
+        return None
+
 def list_channels():
     try:
         list_of_channels =["BBC One","BBC Two","BBC Three","BBC Four","BBC Radio 1","CBBC","CBeebies","BBC Scotland","BBC News","BBC Parliament","BBC Alba","S4C"]
@@ -138,9 +153,6 @@ def list_channels():
     except KeyboardInterrupt:
         return None
 
-
-    
-
 def add_to_download_queue(episode):
     download_queue.append(episode)
 
@@ -150,7 +162,8 @@ def main():
         os.system('clear')
         print('number 1 search by keywords')
         print('number 2 results by channel')
-        print('number 3 begin downloads')
+        print('number 3 search radio only')
+        print('number 4 begin downloads')
         try:
             result = input('choice ')
         except KeyboardInterrupt:
@@ -162,6 +175,8 @@ def main():
             elif result == 2:
                 list_channels()
             elif result == 3:
+                search_radio()
+            elif result == 4:
                 if len( download_queue ) > 0:
                     output_path = os.getcwd() + ':/save-here'
                     command = """docker run --privileged=true --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun -v """ + output_path + """ -w=/save-here -it iget:latest bash -c '/quick.sh """
@@ -184,15 +199,17 @@ def main():
             if result == 'q':
                 break
 
-
-
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == '--help' or sys.argv[1] == '-h':
-        print('Usage: bbc')
-        print('Usage: Script to inteact with get_iplayer script')
-        print("Usage: Allows user to interact and search BBC's iplayer for shows to download. It gets the PID of each episdoe and passes that as arguments to a docker container that uses a VPN to the UK to get around the geo-fencing.")
-    else:
-        width = int( subprocess.check_output(['tput','cols']) )
-        height = int( subprocess.check_output(['tput','lines']) ) -1
-        download_queue = []
-        main()
+    width = int( subprocess.check_output(['tput','cols']) )
+    height = int( subprocess.check_output(['tput','lines']) ) -1
+    download_queue = []
+    main()
+    # if len(sys.argv) >= 1 and sys.argv[1] == '--help' or sys.argv[1] == '-h':
+    #     print('Usage: bbc')
+    #     print('Usage: Script to inteact with get_iplayer script')
+    #     print("Usage: Allows user to interact and search BBC's iplayer for shows to download. It gets the PID of each episdoe and passes that as arguments to a docker container that uses a VPN to the UK to get around the geo-fencing.")
+    # else:
+    #     width = int( subprocess.check_output(['tput','cols']) )
+    #     height = int( subprocess.check_output(['tput','lines']) ) -1
+    #     download_queue = []
+    #     main()
