@@ -137,7 +137,7 @@ def search_radio_by_channel():
         while True:
             os.system('clear')
             for itx,channel in enumerate(list_of_channels):
-                print("{}. {}".format(itx+1,channel))
+                print("number {} {}".format(itx+1,channel))
             result = input('choose channel: ')
             if result == 'q':
                 break
@@ -172,7 +172,7 @@ def list_channels():
         while True:
             os.system('clear')
             for itx,channel in enumerate(list_of_channels):
-                print("{}. {}".format(itx+1,channel))
+                print("number {} {}".format(itx+1,channel))
             result = input('choose channel: ')
             if result == 'q':
                 break
