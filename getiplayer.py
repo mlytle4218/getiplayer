@@ -6,6 +6,7 @@ import math
 import os 
 import config
 import time
+import click
 
 
 class Search_Episode:
@@ -135,7 +136,7 @@ def search_radio():
 
 def list_channels():
     try:
-        list_of_channels =["BBC One","BBC Two","BBC Three","BBC Four","BBC Radio 1","CBBC","CBeebies","BBC Scotland","BBC News","BBC Parliament","BBC Alba","S4C"]
+        list_of_channels =["BBC One","BBC Two","BBC Four","CBBC","CBeebies","BBC News","BBC Parliament"]
         while True:
             os.system('clear')
             for itx,channel in enumerate(list_of_channels):
@@ -156,7 +157,13 @@ def list_channels():
 def add_to_download_queue(episode):
     download_queue.append(episode)
 
+@click.command()
 def main():
+    """
+    Interface to provide clear menus for the get_iplayer perl script. 
+
+    This uses menus to interact with the get_iplayer perl script. It allows the user to find 
+    """
     os.system('clear')
     while True:
         os.system('clear')
@@ -204,12 +211,3 @@ if __name__ == "__main__":
     height = int( subprocess.check_output(['tput','lines']) ) -1
     download_queue = []
     main()
-    # if len(sys.argv) >= 1 and sys.argv[1] == '--help' or sys.argv[1] == '-h':
-    #     print('Usage: bbc')
-    #     print('Usage: Script to inteact with get_iplayer script')
-    #     print("Usage: Allows user to interact and search BBC's iplayer for shows to download. It gets the PID of each episdoe and passes that as arguments to a docker container that uses a VPN to the UK to get around the geo-fencing.")
-    # else:
-    #     width = int( subprocess.check_output(['tput','cols']) )
-    #     height = int( subprocess.check_output(['tput','lines']) ) -1
-    #     download_queue = []
-    #     main()
